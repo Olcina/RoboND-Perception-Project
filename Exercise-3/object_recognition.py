@@ -51,12 +51,12 @@ def pcl_callback(pcl_msg):
     #  RANSAC Plane Segmentation
     seg = cloud_filtered.make_segmenter()
 
-    # Set the model you wish to fit 
+    # Set the model you wish to fit
     seg.set_model_type(pcl.SACMODEL_PLANE)
     seg.set_method_type(pcl.SAC_RANSAC)
 
     # Max distance for a point to be considered fitting the model
-    # Experiment with different values for max_distance 
+    # Experiment with different values for max_distance
     # for segmenting the table
     max_distance = .015
     seg.set_distance_threshold(max_distance)
@@ -78,7 +78,7 @@ def pcl_callback(pcl_msg):
     ec.set_ClusterTolerance(0.05)
     ec.set_MinClusterSize(20)
     ec.set_MaxClusterSize(2000)
-    #search for cluster 
+    #search for cluster
     ec.set_SearchMethod(tree)
     #extract indices for each discovered cluster
     cluster_indices = ec.Extract()
@@ -87,7 +87,7 @@ def pcl_callback(pcl_msg):
     # Create Cluster-Mask Point Cloud to visualize each cluster separately
     cluster_color = get_color_list(len(cluster_indices))
 
-    color_cluster_point_list = []    
+    color_cluster_point_list = []
     for j, indices in enumerate(cluster_indices):
         for i, indice in enumerate(indices):
             color_cluster_point_list.append([white_cloud[indice][0],
@@ -98,17 +98,17 @@ def pcl_callback(pcl_msg):
     cluster_cloud = pcl.PointCloud_PointXYZRGB()
     cluster_cloud.from_list(color_cluster_point_list)
 
-    
+
     #  Convert PCL data to ROS messages
     ros_cluster_cloud = pcl_to_ros(cluster_cloud)
     ros_cloud_table = pcl_to_ros(cloud_table)
-    ros_cloud_objects = pcl_to_ros(cloud_objects) 
+    ros_cloud_objects = pcl_to_ros(cloud_objects)
     #  Publish ROS messages
     pcl_table_pub.publish(ros_cloud_table)
     pcl_objects_pub.publish(ros_cloud_objects)
     pcl_cluster_cloud_pub.publish(ros_cluster_cloud)
 
-# Exercise-3 TODOs: 
+# Exercise-3 TODOs:
 
     # Classify the clusters! (loop through each detected cluster one at a time)
     detected_objects_labels = []
@@ -117,14 +117,14 @@ def pcl_callback(pcl_msg):
         # Grab the points for the cluster
         pcl_cluster = cloud_objects.extract(pts_list)
         ros_cluster = pcl_to_ros(pcl_cluster)
-            
+
         # Compute the associated feature vector
         # Extract histogram features
         chists = compute_color_histograms(ros_cluster, using_hsv=True)
         normals = get_normals(ros_cluster)
         nhists = compute_normal_histograms(normals)
         feature = np.concatenate((chists, nhists))
-        
+
         # Make the prediction
         prediction = clf.predict(scaler.transform(feature.reshape(1,-1)))
         label = encoder.inverse_transform(prediction)[0]
@@ -139,9 +139,9 @@ def pcl_callback(pcl_msg):
         do = DetectedObject()
         do.label = label
         do.cloud = ros_cluster
-        detected_objects.append(do)        
+        detected_objects.append(do)
     # Publish the list of detected objects
-    rospy.loginfo('Detected {} objects {}'.format(len(detected_objects_labels),                 detected_objects_labels))
+    rospy.loginfo('Detected {} objects {}'.format(len(detected_objects_labels), detected_objects_labels))
 
     detected_objects_pub.publish(detected_objects)
 
